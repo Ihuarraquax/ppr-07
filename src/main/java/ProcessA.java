@@ -1,81 +1,58 @@
-import java.io.*;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Random;
 
-public class ProcessA {
+public class ProcessA extends Process {
 
+    private Socket socketB;
+    private Socket socketD;
 
-    private static Socket socketB;
-    private static Socket socketD;
-    private static ServerSocket socket;
-
-    static {
-        try {
-            socket = new ServerSocket(8080);
-            socketB = new Socket("localhost", 8081);
-            socketD = new Socket("localhost", 8083);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public ProcessA(int port){
+        super();
+        MY_PORT = port;
     }
 
-    public static void main(String[] args) throws IOException {
+    private void init() {
+        startMapSocketThread(PROCESS_A_PORT);
+        socketB = handShakeWith(PROCESS_B_PORT);
+        socketD = handShakeWith(PROCESS_D_PORT);
 
-        while(true) {
+    }
+
+    public void run() {
+        init();
+        while (true) {
             String liczby = generate();
-
-            sendToB(liczby);
-
-            sendToD(liczby);
-
-            String fromC = getFromC();
-            System.out.println(fromC);
-        }
-
-    }
-
-    private static String getFromC() throws IOException {
-        Socket socketA = socket.accept();
-
-        DataInputStream input =new DataInputStream(socketA.getInputStream());
-        DataOutputStream output =new DataOutputStream(socketA.getOutputStream());
-        if(input.readUTF().equals("gotowy?")){
-            output.writeBoolean(true);
-            return input.readUTF();
-        }
-        return null;
-    }
-
-    private static void sendToD(String liczby) throws IOException {
-
-        DataInputStream dataInputStream = new DataInputStream(socketD.getInputStream());
-        DataOutputStream output = new DataOutputStream(socketD.getOutputStream());
-
-        output.writeUTF("gotowy?");
-        boolean b = dataInputStream.readBoolean();
-        if(b){
-            output.writeUTF(liczby);
+            sendInfoToE("["+zegar.getTime()+"]" + "wygenerowalem " + liczby);
+            zegar.tick();
+            sendTo(socketB, liczby);
+            zegar.tick();
+            sendTo(socketD, liczby);
+            zegar.tick();
+            String fromC = getFrom(PROCESS_C_PORT);
+            zegar.tick();
+            sendInfoToE("["+zegar.getTime()+"]" + "wracam do kroku 1 ");
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    private static void sendToB(String liczby) throws IOException {
 
-        DataInputStream dataInputStream = new DataInputStream(socketB.getInputStream());
-        DataOutputStream output = new DataOutputStream(socketB.getOutputStream());
-        output.writeUTF("ProcessA: gotowy?");
-        boolean b = dataInputStream.readBoolean();
-        if(b){
-            output.writeUTF(liczby);
-        }
+
+    public static void main(String[] args) {
+        ProcessA processA = new ProcessA(PROCESS_A_PORT);
+
+        processA.run();
     }
 
-    private static String generate() {
+    private String generate() {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 5; i++) {
 
-            sb.append(String.valueOf(random.nextInt(100)));
+            sb.append(String.valueOf(random.nextInt(1000)));
             sb.append(" ");
         }
         return sb.toString();

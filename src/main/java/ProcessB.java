@@ -1,41 +1,68 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Random;
+import java.util.StringTokenizer;
 
-public class ProcessB {
+public class ProcessB extends Process {
 
-    private static ServerSocket socket;
 
-    static {
-        try {
-            socket = new ServerSocket(8081);
-        } catch (IOException e) {
-            e.printStackTrace();
+    private Socket socketC;
+
+    public ProcessB(int port){
+        super();
+        MY_PORT = port;
+    }
+
+    private  void init() {
+        startMapSocketThread(MY_PORT);
+        socketC = handShakeWith(PROCESS_C_PORT);
+
+    }
+
+    public void run() {
+        init();
+        while (true) {
+
+            String liczby = getFrom(PROCESS_A_PORT);
+            zegar.tick();
+            String logLiczby = calculateLog(liczby);
+            sendInfoToE("["+zegar.getTime()+"]" + "Przetworzylem liczby na " + logLiczby);
+            zegar.tick();
+            sendTo(socketC, logLiczby);
+            zegar.tick();
+            sendInfoToE("["+zegar.getTime()+"]" + "wracam do kroku 1 ");
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    public static void main(String[] args) throws IOException {
-
-        String liczby = getFromA();
-        System.out.println(liczby);
-
+    public static void main(String[] args) {
+        ProcessB process = new ProcessB(PROCESS_B_PORT);
+        process.run();
     }
 
-    private static String getFromA() throws IOException {
-        Socket socketA = socket.accept();
 
-        DataInputStream input =new DataInputStream(socketA.getInputStream());
-        DataOutputStream output =new DataOutputStream(socketA.getOutputStream());
-        if(input.readUTF().equals("gotowy?")){
-            output.writeBoolean(true);
-            return input.readUTF();
+
+    private String calculateLog(String liczby) {
+        StringTokenizer stringTokenizer = new StringTokenizer(liczby);
+        int[] tab = new int[stringTokenizer.countTokens()];
+        int i = 0;
+        while (stringTokenizer.hasMoreElements()) {
+            tab[i++] = Integer.parseInt(stringTokenizer.nextToken());
         }
-        return null;
-    }
 
+        for (int j = 0; j < tab.length; j++) {
+            tab[j] = (int) Math.ceil(Math.log(tab[j]));
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int k = 0; k < tab.length; k++) {
+
+            sb.append(String.valueOf(tab[k]));
+            sb.append(" ");
+        }
+        return sb.toString();
+    }
 }

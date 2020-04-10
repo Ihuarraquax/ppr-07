@@ -4,80 +4,74 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Random;
+import java.util.StringTokenizer;
 
-public class ProcessC {
+public class ProcessC extends Process {
 
-    private static Socket socketA;
-    private static ServerSocket socket;
+    private Socket socketA;
 
-    static {
-        try {
-            socket = new ServerSocket(8082);
-            socketA = new Socket("localhost", 8080);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public ProcessC(int port) {
+        super();
+        MY_PORT = port;
     }
 
-    public static void main(String[] args) throws IOException {
-
-        while(true) {
-
-            String fromB = getFromB();
-            String fromD = getFromD();
-
-            process(fromB);
-
-            String fromC = getFromC();
-            System.out.println(fromC);
-        }
+    private void init() {
+        startMapSocketThread(MY_PORT);
+        socketA = handShakeWith(PROCESS_A_PORT);
 
     }
 
-    private static String getFromB() throws IOException {
-        Socket socketB = socket.accept();
+    public void run() {
+        init();
+        while (true) {
+            String liczbyB = getFrom(PROCESS_B_PORT);
+            zegar.tick();
+            String liczbyD = getFrom(PROCESS_D_PORT);
+            zegar.tick();
+            String roznica = calculate(liczbyB, liczbyD);
+            sendInfoToE("["+zegar.getTime()+"]" + "Przetworzylem liczby na " + roznica);
+            zegar.tick();
+            sendTo(socketA, roznica);
+            zegar.tick();
+            sendInfoToE("["+zegar.getTime()+"]" + "wracam do kroku 1 ");
+            try {
+                Thread.sleep(4000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
-        DataInputStream input =new DataInputStream(socketB.getInputStream());
-        DataOutputStream output =new DataOutputStream(socketB.getOutputStream());
-        if(input.readUTF().equals("ProcessB: gotowy?")){
-            output.writeBoolean(true);
-            return input.readUTF();
-        }
-        return null;
-    }
-    private static String getFromD() throws IOException {
-        Socket socketD = socket.accept();
-
-        DataInputStream input =new DataInputStream(socketD.getInputStream());
-        DataOutputStream output =new DataOutputStream(socketD.getOutputStream());
-        if(input.readUTF().equals("ProcessD: gotowy?")){
-            output.writeBoolean(true);
-            return input.readUTF();
-        }
-        return null;
-    }
-
-
-
-    private static void sendToA(String liczby) throws IOException {
-
-        DataInputStream dataInputStream = new DataInputStream(socketD.getInputStream());
-        DataOutputStream output = new DataOutputStream(socketD.getOutputStream());
-
-        output.writeUTF("gotowy?");
-        boolean b = dataInputStream.readBoolean();
-        if(b){
-            output.writeUTF(liczby);
         }
     }
+    public static void main(String[] args) {
+        ProcessC process = new ProcessC(PROCESS_C_PORT);
 
+        process.run();
+    }
 
-    private static String generate() {
-        Random random = new Random();
+    private String calculate(String liczbyB, String liczbyD) {
+        StringTokenizer stringTokenizer = new StringTokenizer(liczbyB);
+        int[] tab = new int[stringTokenizer.countTokens()];
+        int[] tabB = new int[stringTokenizer.countTokens()];
+        int i = 0;
+        while (stringTokenizer.hasMoreElements()) {
+            tabB[i++] = Integer.parseInt(stringTokenizer.nextToken());
+        }
+
+        stringTokenizer = new StringTokenizer(liczbyD);
+        int[] tabD = new int[stringTokenizer.countTokens()];
+        i = 0;
+        while (stringTokenizer.hasMoreElements()) {
+            tabD[i++] = Integer.parseInt(stringTokenizer.nextToken());
+        }
+
+        for (int j = 0; j < tab.length; j++) {
+            tab[j] = tabB[j] - tabD[j];
+        }
+
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 100; i++) {
+        for (int k = 0; k < tab.length; k++) {
 
-            sb.append(String.valueOf(random.nextInt(100)));
+            sb.append(String.valueOf(tab[k]));
             sb.append(" ");
         }
         return sb.toString();
