@@ -1,34 +1,21 @@
-import java.net.Socket;
 import java.util.Random;
 
 public class ProcessA extends Process {
 
-    private Socket socketB;
-    private Socket socketD;
-
-    public ProcessA(int port){
-        super();
-        MY_PORT = port;
-    }
-
-    private void init() {
-        startMapSocketThread(PROCESS_A_PORT);
-        socketB = handShakeWith(PROCESS_B_PORT);
-        socketD = handShakeWith(PROCESS_D_PORT);
-
+    public ProcessA(String name){
+        super(name);
     }
 
     public void run() {
-        init();
         while (true) {
             String liczby = generate();
             sendInfoToE("["+zegar.getTime()+"]" + "wygenerowalem " + liczby);
             zegar.tick();
-            sendTo(socketB, liczby);
+            sendTo("B", liczby);
             zegar.tick();
-            sendTo(socketD, liczby);
+            sendTo("D", liczby);
             zegar.tick();
-            String fromC = getFrom(PROCESS_C_PORT);
+            String fromC = getFrom("C");
             zegar.tick();
             sendInfoToE("["+zegar.getTime()+"]" + "wracam do kroku 1 ");
             try {
@@ -39,11 +26,8 @@ public class ProcessA extends Process {
         }
     }
 
-
-
     public static void main(String[] args) {
-        ProcessA processA = new ProcessA(PROCESS_A_PORT);
-
+        ProcessA processA = new ProcessA("A");
         processA.run();
     }
 
@@ -51,7 +35,6 @@ public class ProcessA extends Process {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 5; i++) {
-
             sb.append(String.valueOf(random.nextInt(1000)));
             sb.append(" ");
         }

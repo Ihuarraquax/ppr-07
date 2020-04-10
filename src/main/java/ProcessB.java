@@ -1,4 +1,3 @@
-import java.io.IOException;
 import java.net.Socket;
 import java.util.StringTokenizer;
 
@@ -7,27 +6,18 @@ public class ProcessB extends Process {
 
     private Socket socketC;
 
-    public ProcessB(int port){
-        super();
-        MY_PORT = port;
-    }
-
-    private  void init() {
-        startMapSocketThread(MY_PORT);
-        socketC = handShakeWith(PROCESS_C_PORT);
-
+    public ProcessB(String name){
+        super(name);
     }
 
     public void run() {
-        init();
         while (true) {
-
-            String liczby = getFrom(PROCESS_A_PORT);
+            String liczby = getFrom("B");
             zegar.tick();
             String logLiczby = calculateLog(liczby);
             sendInfoToE("["+zegar.getTime()+"]" + "Przetworzylem liczby na " + logLiczby);
             zegar.tick();
-            sendTo(socketC, logLiczby);
+            sendTo("B-C", logLiczby);
             zegar.tick();
             sendInfoToE("["+zegar.getTime()+"]" + "wracam do kroku 1 ");
             try {
@@ -39,7 +29,7 @@ public class ProcessB extends Process {
     }
 
     public static void main(String[] args) {
-        ProcessB process = new ProcessB(PROCESS_B_PORT);
+        ProcessB process = new ProcessB("B");
         process.run();
     }
 

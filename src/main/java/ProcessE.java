@@ -1,95 +1,59 @@
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.TextMessage;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-public class ProcessE {
+public class ProcessE extends Process {
 
-    private ServerSocket serverSocket;
 
-    private void init() {
-        try {
-            serverSocket = new ServerSocket(8084);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public ProcessE(String queueName) {
+        super(queueName);
 
-        ExecutorService executor = Executors.newFixedThreadPool(4);
-        while (true){
-            try {
-                Socket accept = serverSocket.accept();
-                executor.execute(new ConsolePrinter(accept,System.out));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+
     }
 
     public void run() {
-        init();
+        MessageConsumer e = createConsumer("E");
         while (true) {
-
+            try {
+                TextMessage receive = (TextMessage) e.receive();
+                printMSG(receive.getText());
+            } catch (JMSException jmsException) {
+                jmsException.printStackTrace();
+            }
         }
     }
 
     public static void main(String[] args) {
-        ProcessE process = new ProcessE();
+        ProcessE process = new ProcessE("E");
         process.run();
     }
 
-    private class ConsolePrinter implements Runnable {
+    private void printMSG(String message){
 
-        private Socket socket;
-        private PrintStream out;
-        private DataInputStream input;
+        String color = null;
+        switch (message.charAt(0)){
+            case 'A':
+                color = ANSI_GREEN;
+                break;
+            case 'B':
+                color = ANSI_RED;
+                break;
+            case 'C':
+                color = ANSI_YELLOW;
+                break;
+            case 'D':
+                color = ANSI_BLUE;
+                break;
 
-        private ConsolePrinter(Socket socket, PrintStream out) {
-            this.socket = socket;
-            this.out = out;
-            try {
-                input = new DataInputStream(socket.getInputStream());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
-
-        @Override
-        public void run() {
-
-            String color = null;
-            while (true) {
-                try {
-                    String message = input.readUTF();
-                    switch (message.substring(0,4)){
-                        case "8080":
-                            color = ANSI_GREEN;
-                            break;
-                        case "8081":
-                            color = ANSI_RED;
-                            break;
-                        case "8082":
-                            color = ANSI_YELLOW;
-                            break;
-                        case "8083":
-                            color = ANSI_BLUE;
-                            break;
-
-                    }
-                    out.println(color+"[RT:"+ LocalTime.now()+"] "+message+ANSI_RESET);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+        System.out.println(color+"[RT:"+ LocalTime.now()+"] "+message+ANSI_RESET);
     }
-
-
 
 
     public static final String ANSI_RESET = "\u001B[0m";

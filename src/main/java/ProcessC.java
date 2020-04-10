@@ -1,37 +1,24 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Random;
 import java.util.StringTokenizer;
 
 public class ProcessC extends Process {
 
     private Socket socketA;
 
-    public ProcessC(int port) {
-        super();
-        MY_PORT = port;
+    public ProcessC(String name) {
+        super(name);
     }
-
-    private void init() {
-        startMapSocketThread(MY_PORT);
-        socketA = handShakeWith(PROCESS_A_PORT);
-
-    }
-
     public void run() {
-        init();
+
         while (true) {
-            String liczbyB = getFrom(PROCESS_B_PORT);
+            String liczbyB = getFrom("B-C");
             zegar.tick();
-            String liczbyD = getFrom(PROCESS_D_PORT);
+            String liczbyD = getFrom("D-C");
             zegar.tick();
             String roznica = calculate(liczbyB, liczbyD);
             sendInfoToE("["+zegar.getTime()+"]" + "Przetworzylem liczby na " + roznica);
             zegar.tick();
-            sendTo(socketA, roznica);
+            sendTo("A", roznica);
             zegar.tick();
             sendInfoToE("["+zegar.getTime()+"]" + "wracam do kroku 1 ");
             try {
@@ -43,8 +30,7 @@ public class ProcessC extends Process {
         }
     }
     public static void main(String[] args) {
-        ProcessC process = new ProcessC(PROCESS_C_PORT);
-
+        ProcessC process = new ProcessC("C");
         process.run();
     }
 

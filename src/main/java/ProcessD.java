@@ -5,26 +5,18 @@ public class ProcessD extends Process {
 
     private  Socket socketC;
 
-    public ProcessD(int port){
-        super();
-        MY_PORT = port;
-    }
-
-    private void init() {
-        startMapSocketThread(MY_PORT);
-        socketC = handShakeWith(PROCESS_C_PORT);
-
+    public ProcessD(String name){
+        super(name);
     }
 
     public void run() {
-        init();
         while (true) {
-            String liczby = getFrom(PROCESS_A_PORT);
+            String liczby = getFrom("D");
             zegar.tick();
             String calculate = calculate(liczby);
             sendInfoToE("["+zegar.getTime()+"]" + "przetworzylem liczby na " + calculate);
             zegar.tick();
-            sendTo(socketC, calculate);
+            sendTo("D-C", calculate);
             zegar.tick();
             sendInfoToE("["+zegar.getTime()+"]" + "wracam do kroku 1 ");
             try {
@@ -38,7 +30,7 @@ public class ProcessD extends Process {
 
 
     public static void main(String[] args) {
-        ProcessD process = new ProcessD(PROCESS_D_PORT);
+        ProcessD process = new ProcessD("D");
         process.run();
     }
 
